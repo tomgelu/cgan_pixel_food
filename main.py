@@ -19,8 +19,8 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 def generate_prompt(row):
     ingredients = row['ingredients'].split('|')
     cooking_methods = row['cooking_methods'].split('|') if pd.notna(row['cooking_methods']) and row['cooking_methods'] else []
-    sauce = row['sauce'] if row['sauce'] != "none" else None
-    garnishes = [g for g in row['garnishes'].split('|') if g and g != "none"] if pd.notna(row['garnishes']) and row['garnishes'] else []
+    sauce = row['sauce'] if row['sauce'] not in [None, "none", ""] else None
+    garnishes = [g for g in row['garnishes'].split('|') if g and g.lower() != "none"] if pd.notna(row['garnishes']) and row['garnishes'] else []
 
     cooked_ingredients = [f"{method} {ingredient}" for ingredient in ingredients for method in cooking_methods] if cooking_methods else ingredients
     ingredients_part = ", ".join(cooked_ingredients)
@@ -29,7 +29,7 @@ def generate_prompt(row):
     if sauce:
         description += f" with {sauce.replace('_', ' ')} sauce"
     if garnishes:
-        garnishes_text = ", ".join(f"{g.replace('_', ' ')}" for g in garnishes)
+        garnishes_text = ", ".join(g.replace('_', ' ') for g in garnishes)
         description += f", garnished with {garnishes_text} carefully placed inside the bowl"
 
     prompt = (
@@ -39,6 +39,7 @@ def generate_prompt(row):
         "Everything inside the bowl. No food outside."
     )
     return prompt
+
 
 # --- API Call ---
 def generate_image(prompt: str, negative_prompt: str = "", width: int = 128, height: int = 128,
@@ -107,4 +108,4 @@ def generate_from_csv(csv_path: str, limit: int = 20):
 
 # --- Run ---
 if __name__ == "__main__":
-    generate_from_csv(csv_path=CSV_INPUT, limit=20)  # Adjust number as needed
+    generate_from_csv(csv_path=CSV_INPUT, limit=200)  # Adjust number as needed

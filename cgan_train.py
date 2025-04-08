@@ -13,13 +13,17 @@ import torchvision.utils as vutils
 # ========== CONFIG ==========
 IMAGE_SIZE = 128
 BATCH_SIZE = 1
-EPOCHS = 5000
+EPOCHS = 1000
 LATENT_DIM = 100
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+print(DEVICE)
 DATASET_DIR = "dataset"
+WEIGHTS_DIR = "weights"
+
 CSV_PATH = "combos/combo_metadata.csv"
 OUTPUT_DIR = "outputs"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+os.makedirs(WEIGHTS_DIR, exist_ok=True)
 
 # ========== TAGS ==========
 ALL_TAGS = [
@@ -136,7 +140,7 @@ class Discriminator(nn.Module):
 # ========== TRAINING ==========
 def train():
     full_dataset = FoodDataset(CSV_PATH, DATASET_DIR)
-    subset_indices = list(range(20))  #list(range(min(5, len(full_dataset))))
+    subset_indices = list(range(len(full_dataset)))  #list(range(min(5, len(full_dataset))))
     dataset = torch.utils.data.Subset(full_dataset, subset_indices)
     dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
@@ -172,7 +176,10 @@ def train():
             optimizer_D.step()
 
         print(f"Epoch {epoch+1}/{EPOCHS} | D Loss: {d_loss.item():.4f} | G Loss: {g_loss.item():.4f}")
-        vutils.save_image(gen_imgs.data[:1], f"{OUTPUT_DIR}/sample_epoch_{epoch+1:03}.png", normalize=True)
+        if (epoch + 1) % 100 == 0:
+            vutils.save_image(gen_imgs.data[:1], f"{OUTPUT_DIR}/sample_epoch_{epoch+1:03}.png", normalize=True)
+    torch.save(generator.state_dict(), os.path.join(WEIGHTS_DIR, "generator_final.pth"))
+
 
 if __name__ == "__main__":
     train()
