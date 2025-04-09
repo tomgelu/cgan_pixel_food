@@ -9,7 +9,7 @@ import time
 IMAGE_SIZE = 128
 LATENT_DIM = 100
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-MODEL_PATH = "weights/generator_final.pth"
+MODEL_PATH = "weights/checkpoint_epoch_2500.pth"
 OUTPUT_DIR = "inference_outputs"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -85,7 +85,7 @@ def generate_image(generator, tags, num_images=1, seed=None):
 def main():
     # Load model
     generator = Generator(LATENT_DIM, TAG_DIM).to(DEVICE)
-    generator.load_state_dict(torch.load(MODEL_PATH))
+    generator.load_state_dict(torch.load(MODEL_PATH, map_location=torch.device(DEVICE)))
     generator.eval()
     
     # Example usage

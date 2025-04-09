@@ -1,4 +1,4 @@
-# cgan_train.py (patched for stability and clarity)
+# cgan_train.py (patched for stability and clarity with logging + improved loss + diffaug)
 import os
 import pandas as pd
 import numpy as np
@@ -11,10 +11,11 @@ import torch.nn.functional as F
 import torchvision.utils as vutils
 import argparse
 import glob
+from torch.utils.tensorboard import SummaryWriter
 
 # ========== CONFIG ==========
 IMAGE_SIZE = 128
-BATCH_SIZE = 1
+BATCH_SIZE = 8
 EPOCHS = 1000
 LATENT_DIM = 100
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -22,12 +23,14 @@ print(DEVICE)
 DATASET_DIR = "dataset"
 WEIGHTS_DIR = "weights"
 CHECKPOINT_DIR = "checkpoints"
+LOG_DIR = "logs"
 
 CSV_PATH = "combos/combo_metadata.csv"
 OUTPUT_DIR = "outputs"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(WEIGHTS_DIR, exist_ok=True)
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
+os.makedirs(LOG_DIR, exist_ok=True)
 
 # ========== TAGS ==========
 ALL_TAGS = [
@@ -38,6 +41,12 @@ ALL_TAGS = [
 ]
 TAG_DIM = len(ALL_TAGS)
 TAG2IDX = {tag: i for i, tag in enumerate(ALL_TAGS)}
+
+# ========== DIFFAUG ========== (Simplified Color + Translation)
+def diff_augment(x):
+    shift = torch.randint(-2, 3, (x.size(0), 2, 1, 1), device=x.device)
+    x = torch.roll(x, shifts=(shift[:, 0], shift[:, 1]), dims=(2, 3))
+    return x
 
 # ========== DATASET ==========
 class FoodDataset(Dataset):
@@ -93,13 +102,13 @@ class Generator(nn.Module):
             nn.Conv2d(128, 64, 3, padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(True),
-    nn.Upsample(scale_factor=2, mode="nearest"),
-    nn.Conv2d(64, 32, 3, padding=1),
-    nn.BatchNorm2d(32),
-    nn.ReLU(True),
-    nn.Upsample(scale_factor=2, mode="nearest"),
-    nn.Conv2d(32, 3, 3, padding=1),
-    nn.Tanh()
+            nn.Upsample(scale_factor=2, mode="nearest"),
+            nn.Conv2d(64, 32, 3, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(True),
+            nn.Upsample(scale_factor=2, mode="nearest"),
+            nn.Conv2d(32, 3, 3, padding=1),
+            nn.Tanh()
         )
 
     def forward(self, z, tags):
@@ -113,26 +122,18 @@ class Discriminator(nn.Module):
         self.conv = nn.Sequential(
             nn.Conv2d(3, 64, 4, 2, 1),
             nn.LeakyReLU(0.2),
-            nn.Dropout2d(0.25),
-
             nn.Conv2d(64, 128, 4, 2, 1),
             nn.BatchNorm2d(128),
             nn.LeakyReLU(0.2),
-            nn.Dropout2d(0.25),
-
             nn.Conv2d(128, 256, 4, 2, 1),
             nn.BatchNorm2d(256),
             nn.LeakyReLU(0.2),
-            nn.Dropout2d(0.25),
-
             nn.Conv2d(256, 512, 4, 2, 1),
             nn.BatchNorm2d(512),
             nn.LeakyReLU(0.2)
         )
-        # Output of conv: [B, 512, 4, 4] => 512*4*4 = 8192
         self.fc = nn.Sequential(
-            nn.Linear(512 * 8 * 8 + tag_dim, 1),
-            nn.Sigmoid()
+            nn.Linear(512 * 8 * 8 + tag_dim, 1)
         )
 
     def forward(self, img, tags):
@@ -142,109 +143,53 @@ class Discriminator(nn.Module):
         return self.fc(x)
 
 # ========== TRAINING ==========
-def save_checkpoint(epoch, generator, discriminator, optimizer_G, optimizer_D, loss_G, loss_D, filename):
-    """Save training checkpoint."""
-    checkpoint = {
-        'epoch': epoch,
-        'generator_state_dict': generator.state_dict(),
-        'discriminator_state_dict': discriminator.state_dict(),
-        'optimizer_G_state_dict': optimizer_G.state_dict(),
-        'optimizer_D_state_dict': optimizer_D.state_dict(),
-        'loss_G': loss_G,
-        'loss_D': loss_D
-    }
-    torch.save(checkpoint, filename)
-    print(f"Checkpoint saved to {filename}")
-
-def load_checkpoint(filename, generator, discriminator, optimizer_G, optimizer_D):
-    """Load training checkpoint."""
-    if os.path.exists(filename):
-        checkpoint = torch.load(filename)
-        generator.load_state_dict(checkpoint['generator_state_dict'])
-        discriminator.load_state_dict(checkpoint['discriminator_state_dict'])
-        optimizer_G.load_state_dict(checkpoint['optimizer_G_state_dict'])
-        optimizer_D.load_state_dict(checkpoint['optimizer_D_state_dict'])
-        start_epoch = checkpoint['epoch'] + 1
-        print(f"Loaded checkpoint from epoch {checkpoint['epoch']}")
-        return start_epoch
-    return 0
-
-def get_latest_checkpoint():
-    """Find the latest checkpoint file in the checkpoints directory."""
-    checkpoint_files = glob.glob(os.path.join(CHECKPOINT_DIR, "checkpoint_epoch_*.pth"))
-    if not checkpoint_files:
-        return None
-    
-    # Extract epoch numbers and find the latest
-    def get_epoch_number(filename):
-        return int(os.path.basename(filename).split('_')[2])
-    
-    latest_checkpoint = max(checkpoint_files, key=get_epoch_number)
-    return latest_checkpoint
-
-def train(resume_from=None):
-    full_dataset = FoodDataset(CSV_PATH, DATASET_DIR)
-    subset_indices = list(range(len(full_dataset)))
-    dataset = torch.utils.data.Subset(full_dataset, subset_indices)
+def train():
+    writer = SummaryWriter(LOG_DIR)
+    dataset = FoodDataset(CSV_PATH, DATASET_DIR)
     dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
     generator = Generator(LATENT_DIM, TAG_DIM).to(DEVICE)
     discriminator = Discriminator(TAG_DIM).to(DEVICE)
 
-    optimizer_G = torch.optim.Adam(generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
-    optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))
+    optimizer_G = torch.optim.Adam(generator.parameters(), lr=0.0001, betas=(0.5, 0.999))
+    optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=0.0001, betas=(0.5, 0.999))
 
-    adversarial_loss = nn.BCELoss()
-    
-    start_epoch = 0
-    # If no specific checkpoint is provided, try to find the latest one
-    if resume_from is None:
-        resume_from = get_latest_checkpoint()
-        if resume_from:
-            print(f"Found latest checkpoint: {resume_from}")
-    
-    if resume_from:
-        start_epoch = load_checkpoint(resume_from, generator, discriminator, optimizer_G, optimizer_D)
+    def d_loss_fn(real, fake):
+        return -(torch.mean(real) - torch.mean(fake))
 
-    for epoch in range(start_epoch, EPOCHS):
+    def g_loss_fn(fake):
+        return -torch.mean(fake)
+
+    for epoch in range(EPOCHS):
         for i, (imgs, tags) in enumerate(dataloader):
-            real_imgs = imgs.to(DEVICE)
+            real_imgs = diff_augment(imgs.to(DEVICE))
             tags = tags.to(DEVICE)
             batch_size = real_imgs.size(0)
 
-            valid = torch.full((batch_size, 1), 0.9, device=DEVICE)
-            fake = torch.full((batch_size, 1), 0.0, device=DEVICE)
-
+            # Train Generator
             optimizer_G.zero_grad()
             z = torch.randn(batch_size, LATENT_DIM, device=DEVICE)
             gen_imgs = generator(z, tags)
-            g_loss = adversarial_loss(discriminator(gen_imgs, tags), valid)
+            g_loss = g_loss_fn(discriminator(diff_augment(gen_imgs), tags))
             g_loss.backward()
             optimizer_G.step()
 
+            # Train Discriminator
             optimizer_D.zero_grad()
-            real_loss = adversarial_loss(discriminator(real_imgs, tags), valid)
-            fake_loss = adversarial_loss(discriminator(gen_imgs.detach(), tags), fake)
-            d_loss = (real_loss + fake_loss) / 2
+            real_pred = discriminator(real_imgs, tags)
+            fake_pred = discriminator(diff_augment(gen_imgs.detach()), tags)
+            d_loss = d_loss_fn(real_pred, fake_pred)
             d_loss.backward()
             optimizer_D.step()
 
+        writer.add_scalar("Loss/Generator", g_loss.item(), epoch)
+        writer.add_scalar("Loss/Discriminator", d_loss.item(), epoch)
+
         print(f"Epoch {epoch+1}/{EPOCHS} | D Loss: {d_loss.item():.4f} | G Loss: {g_loss.item():.4f}")
-        
-        # Save checkpoint every 10 epochs
-        if (epoch + 1) % 10 == 0:
-            checkpoint_path = os.path.join(CHECKPOINT_DIR, f"checkpoint_epoch_{epoch+1:03}.pth")
-            save_checkpoint(epoch, generator, discriminator, optimizer_G, optimizer_D, g_loss.item(), d_loss.item(), checkpoint_path)
-            
+
         if (epoch + 1) % 100 == 0:
             vutils.save_image(gen_imgs.data[:1], f"{OUTPUT_DIR}/sample_epoch_{epoch+1:03}.png", normalize=True)
-    
-    torch.save(generator.state_dict(), os.path.join(WEIGHTS_DIR, "generator_final.pth"))
-
+            torch.save(generator.state_dict(), os.path.join(WEIGHTS_DIR, f"generator_epoch_{epoch+1}.pth"))
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Train CGAN with checkpoint support')
-    parser.add_argument('--resume', type=str, help='Path to checkpoint file to resume training from (optional)')
-    args = parser.parse_args()
-    
-    train(resume_from=args.resume)
+    train()
