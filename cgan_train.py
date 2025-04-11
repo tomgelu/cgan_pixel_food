@@ -15,8 +15,8 @@ from torch.utils.tensorboard import SummaryWriter
 
 # ========== CONFIG ==========
 IMAGE_SIZE = 128
-BATCH_SIZE = 8
-EPOCHS = 1000
+BATCH_SIZE = 64
+EPOCHS = 10000
 LATENT_DIM = 100
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(DEVICE)
