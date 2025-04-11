@@ -33,20 +33,15 @@ os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 os.makedirs(LOG_DIR, exist_ok=True)
 
 # ========== TAGS ==========
-ALL_TAGS = [
-    "fish", "meat", "mushroom", "root_vegetables", "frog_legs",
-    "grilled", "stewed", "raw", "baked",
-    "curry", "brown_broth", "tomato_sauce", "green_emulsion",
-    "chili_flakes", "flowers", "herbs"
-]
+ALL_TAGS = ['baked', 'bacon_bits', 'basil', 'beans', 'black_ink', 'boiled', 'braised', 'brown_broth', 'carrot', 'charred', 'cheese', 'cheese_sauce', 'chili_flakes', 'cilantro', 'corn', 'crab', 'croutons', 'curry', 'dill', 'egg', 'egg_slices', 'eggplant', 'fish', 'flowers', 'fried', 'frog_legs', 'garlic_sauce', 'ginger_sauce', 'glass_noodles', 'green_emulsion', 'green_onions', 'grilled', 'herbs', 'meat', 'miso_soup', 'mushroom', 'noodles', 'onion', 'onion_rings', 'parsley', 'peanut_sauce', 'pepper', 'pickle_slices', 'poached', 'potato', 'pumpkin', 'raw', 'rice', 'rice_noodles', 'roasted', 'root_vegetables', 'sautéed', 'seaweed', 'seaweed_noodles', 'seeds', 'sesame_seeds', 'shellfish', 'shrimp', 'slime_meat', 'soy_sauce', 'squash', 'steamed', 'stewed', 'stir_fried', 'tentacle', 'teriyaki', 'tofu', 'tomato_sauce', 'zucchini']
 TAG_DIM = len(ALL_TAGS)
 TAG2IDX = {tag: i for i, tag in enumerate(ALL_TAGS)}
 
 # ========== DIFFAUG ========== (Simplified Color + Translation)
 def diff_augment(x):
-    shift = torch.randint(-2, 3, (x.size(0), 2, 1, 1), device=x.device)
-    x = torch.roll(x, shifts=(shift[:, 0], shift[:, 1]), dims=(2, 3))
-    return x
+    shift_y = int(torch.randint(-2, 3, (1,)).item())
+    shift_x = int(torch.randint(-2, 3, (1,)).item())
+    return torch.roll(x, shifts=(shift_y, shift_x), dims=(2, 3))
 
 # ========== DATASET ==========
 class FoodDataset(Dataset):
