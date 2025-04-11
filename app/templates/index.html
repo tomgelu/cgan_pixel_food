@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Image Retrieval System</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="{{ url_for('serve_static', filename='css/styles.css') }}">
+    <link rel="icon" href="{{ url_for('serve_static', filename='img/favicon.ico') }}">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="logo">
+                <img src="{{ url_for('serve_static', filename='img/logo.png') }}" alt="Logo" class="logo-img">
+                <h1>Food Image Retrieval</h1>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="#" class="active">Search</a></li>
+                    <li><a href="/image-processing">Image Processing</a></li>
+                    <li><a href="#about-section">About</a></li>
+                    <li><a href="#how-it-works">How It Works</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main class="app-main">
+            <section class="search-section">
+                <div class="search-container">
+                    <h2>Find Food Images by Ingredients</h2>
+                    <p class="subtitle">Enter ingredients to discover visually similar dishes</p>
+                    
+                    <!-- Add super visible image processor button -->
+                    <div class="top-actions">
+                        <a href="/image-processing" class="highlight-button">
+                            <span class="button-icon">🎨</span> Open Image Processor
+                        </a>
+                    </div>
+                    
+                    <div class="search-box">
+                        <input type="text" id="ingredient-input" placeholder="e.g., mushroom, rice, fish...">
+                        <button id="search-btn" class="primary-btn">Search</button>
+                    </div>
+                    
+                    <div class="example-tags">
+                        <span class="example-tag" data-ingredients="rice and vegetables">rice and vegetables</span>
+                        <span class="example-tag" data-ingredients="noodles with egg">noodles with egg</span>
+                        <span class="example-tag" data-ingredients="potato and cheese">potato and cheese</span>
+                        <span class="example-tag" data-ingredients="seafood stew">seafood stew</span>
+                        <span class="example-tag" data-ingredients="mushroom and chicken">mushroom and chicken</span>
+                    </div>
+                </div>
+                
+                <div id="loading-indicator" class="loading-indicator hidden">
+                    <div class="spinner"></div>
+                    <p>Searching for dishes...</p>
+                </div>
+                
+                <div id="error-message" class="error-message hidden"></div>
+                
+                <div id="results-container" class="results-container hidden">
+                    <div class="results-header">
+                        <h3>Search Results</h3>
+                        <div class="results-controls">
+                            <select id="sort-by" class="sort-select">
+                                <option value="score">Sort by Relevance</option>
+                                <option value="ingredients">Sort by Matched Ingredients</option>
+                                <option value="diversity">Sort by Diversity</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="results-grid" class="results-grid"></div>
+                </div>
+            </section>
+            
+            <!-- Add a direct access card for the image processor -->
+            <section class="direct-access-section">
+                <div class="direct-access-card">
+                    <div class="icon-container">
+                        <span class="large-icon">🖼️</span>
+                    </div>
+                    <h2>Image Processing Tools</h2>
+                    <p>Highlight ingredients, apply pixel art filters, create collages, and more.</p>
+                    <a href="/image-processing" class="cta-button">Access Image Processor</a>
+                </div>
+            </section>
+            
+            <section id="about-section" class="about-section">
+                <h2>About This Project</h2>
+                <p>This Food Image Retrieval System uses advanced AI techniques to help you find food images based on ingredients. The system combines CLIP-powered semantic search with smart ingredient mapping and advanced ranking algorithms.</p>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🔍</div>
+                        <h3>Smart Ingredient Mapping</h3>
+                        <p>Recognizes ingredient variations, synonyms, and cooking techniques.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">🧠</div>
+                        <h3>CLIP Semantic Search</h3>
+                        <p>Uses OpenAI's CLIP model to understand the visual content of food images.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">⚖️</div>
+                        <h3>Advanced Ranking</h3>
+                        <p>Combines multiple ranking strategies to show the most relevant results first.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">🎨</div>
+                        <h3>Image Processing</h3>
+                        <p>Highlights matched ingredients and creates visual comparisons.</p>
+                        <a href="/image-processing" class="feature-link">Try the image processor →</a>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="how-it-works" class="how-it-works">
+                <h2>How It Works</h2>
+                
+                <div class="workflow">
+                    <div class="workflow-step">
+                        <div class="step-number">1</div>
+                        <h3>Query Processing</h3>
+                        <p>Your ingredients query is analyzed and mapped to canonical ingredients.</p>
+                    </div>
+                    
+                    <div class="workflow-step">
+                        <div class="step-number">2</div>
+                        <h3>Semantic Search</h3>
+                        <p>CLIP model finds visually similar images based on your query.</p>
+                    </div>
+                    
+                    <div class="workflow-step">
+                        <div class="step-number">3</div>
+                        <h3>Ranking & Filtering</h3>
+                        <p>Results are ranked using multiple strategies to show the best matches.</p>
+                    </div>
+                    
+                    <div class="workflow-step">
+                        <div class="step-number">4</div>
+                        <h3>Result Processing</h3>
+                        <p>Matched ingredients are highlighted in the result images.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <div id="image-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <div class="modal-body">
+                    <div class="modal-image-container">
+                        <img id="modal-image" src="" alt="Food image">
+                    </div>
+                    <div class="modal-details">
+                        <h3 id="modal-title">Image Details</h3>
+                        <div class="detail-group">
+                            <h4>Matched Ingredients</h4>
+                            <ul id="modal-ingredients" class="ingredients-list"></ul>
+                        </div>
+                        <div class="detail-group">
+                            <h4>Score</h4>
+                            <p id="modal-score"></p>
+                        </div>
+                        <div class="actions">
+                            <button id="generate-btn" class="secondary-btn">Generate Variant</button>
+                            <button id="compare-btn" class="secondary-btn">Compare With...</button>
+                        </div>
+                        <div class="feedback">
+                            <h4>How relevant is this result?</h4>
+                            <div class="rating">
+                                <span class="star" data-rating="1">★</span>
+                                <span class="star" data-rating="2">★</span>
+                                <span class="star" data-rating="3">★</span>
+                                <span class="star" data-rating="4">★</span>
+                                <span class="star" data-rating="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="app-footer">
+            <p>&copy; 2023 Food Image Retrieval System</p>
+        </footer>
+    </div>
+    
+    <script src="{{ url_for('serve_static', filename='js/app.js') }}"></script>
+</body>
+</html> 

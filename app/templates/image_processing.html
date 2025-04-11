@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Processing Tools</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .processing-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .option-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            width: 300px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .option-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            border-color: #007bff;
+        }
+        
+        .upload-area.dragover {
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+        
+        .image-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .preview-container {
+            flex: 1;
+            min-width: 300px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        .preview-container img {
+            max-width: 100%;
+            max-height: 400px;
+            display: block;
+            margin: 0 auto;
+        }
+        
+        .ingredient-input {
+            margin-top: 20px;
+        }
+        
+        .ingredient-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .ingredient-tag {
+            background-color: #e9ecef;
+            padding: 5px 10px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .ingredient-tag .remove {
+            margin-left: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .controls {
+            margin-top: 20px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <h1>Food Image Processor</h1>
+            </div>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/image-processing" class="active">Image Processing</a></li>
+            </ul>
+        </nav>
+    </header>
+    
+    <main class="container">
+        <h2>Image Processing Tools</h2>
+        <p>Select an operation and upload an image to process.</p>
+        
+        <div class="processing-options">
+            <div class="option-card" data-option="highlight">
+                <h3>Highlight Ingredients</h3>
+                <p>Highlight specific ingredients in a food image.</p>
+            </div>
+            <div class="option-card" data-option="pixel-art">
+                <h3>Apply Pixel Art Filter</h3>
+                <p>Convert any image to pixel art style.</p>
+            </div>
+            <div class="option-card" data-option="collage">
+                <h3>Create Ingredient Collage</h3>
+                <p>Create a collage of ingredient images.</p>
+            </div>
+            <div class="option-card" data-option="direct">
+                <h3>Direct Processing</h3>
+                <p>Uses the direct image processor API endpoint.</p>
+            </div>
+        </div>
+        
+        <div id="highlight-options" class="process-specific-options hidden">
+            <h3>Ingredient Highlighting</h3>
+            <div class="ingredient-input">
+                <label for="ingredients">Enter ingredients to highlight (comma separated):</label>
+                <div class="input-group">
+                    <input type="text" id="ingredients" class="form-control" placeholder="e.g., shrimp, mushroom, carrot">
+                    <button id="add-ingredient" class="btn">Add</button>
+                </div>
+                <div class="ingredient-list" id="ingredient-list"></div>
+            </div>
+            <div class="form-group">
+                <label for="opacity">Highlight opacity:</label>
+                <input type="range" id="opacity" min="0.1" max="0.9" step="0.1" value="0.3">
+                <span id="opacity-value">0.3</span>
+            </div>
+            <div class="form-check">
+                <input type="checkbox" id="show-labels" checked>
+                <label for="show-labels">Show ingredient labels</label>
+            </div>
+        </div>
+        
+        <div id="pixel-art-options" class="process-specific-options hidden">
+            <h3>Pixel Art Filter</h3>
+            <div class="form-group">
+                <label for="pixel-size">Pixel size:</label>
+                <input type="range" id="pixel-size" min="4" max="16" step="1" value="8">
+                <span id="pixel-size-value">8</span>
+            </div>
+            <div class="form-group">
+                <label for="palette-size">Color palette size:</label>
+                <input type="range" id="palette-size" min="8" max="64" step="8" value="32">
+                <span id="palette-size-value">32</span>
+            </div>
+        </div>
+        
+        <div id="collage-options" class="process-specific-options hidden">
+            <h3>Ingredient Collage</h3>
+            <p>Upload multiple images to create a collage.</p>
+            <div class="form-group">
+                <label for="collage-columns">Columns:</label>
+                <input type="number" id="collage-columns" min="1" max="5" value="3">
+            </div>
+            <div class="form-check">
+                <input type="checkbox" id="highlight-collage" checked>
+                <label for="highlight-collage">Highlight ingredients in collage</label>
+            </div>
+        </div>
+        
+        <div id="direct-options" class="process-specific-options hidden">
+            <h3>Direct Image Processing</h3>
+            <p>This uses the direct image processor API endpoint.</p>
+            <div class="form-group">
+                <label for="filter-type">Filter Type:</label>
+                <select id="filter-type" class="form-control">
+                    <option value="pixel">Pixel Art Filter</option>
+                    <option value="highlight">Highlight Ingredients</option>
+                </select>
+            </div>
+            
+            <div id="direct-pixel-options">
+                <div class="form-group">
+                    <label for="direct-pixel-size">Pixel size:</label>
+                    <input type="range" id="direct-pixel-size" min="4" max="16" step="1" value="8">
+                    <span id="direct-pixel-size-value">8</span>
+                </div>
+            </div>
+            
+            <div id="direct-highlight-options" class="hidden">
+                <div class="ingredient-input">
+                    <label for="direct-ingredients">Enter ingredients to highlight:</label>
+                    <div class="input-group">
+                        <input type="text" id="direct-ingredients" class="form-control" placeholder="e.g., shrimp, mushroom, carrot">
+                        <button id="direct-add-ingredient" class="btn">Add</button>
+                    </div>
+                    <div class="ingredient-list" id="direct-ingredient-list"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="upload-area" id="upload-area">
+            <p>Drag and drop image here or click to upload</p>
+            <input type="file" id="image-upload" accept="image/*" multiple class="hidden">
+        </div>
+        
+        <div class="image-preview hidden" id="image-preview">
+            <div class="preview-container">
+                <h3>Original Image</h3>
+                <img id="original-preview" src="" alt="Original image">
+            </div>
+            <div class="preview-container">
+                <h3>Processed Image</h3>
+                <img id="processed-preview" src="" alt="Processed image">
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="process-button" class="btn btn-primary" disabled>Process Image</button>
+            <button id="download-button" class="btn" disabled>Download Result</button>
+        </div>
+    </main>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Variables
+            let selectedOption = null;
+            let uploadedFiles = [];
+            let selectedIngredients = [];
+            const optionCards = document.querySelectorAll('.option-card');
+            const processSpecificOptions = document.querySelectorAll('.process-specific-options');
+            const uploadArea = document.getElementById('upload-area');
+            const fileInput = document.getElementById('image-upload');
+            const imagePreview = document.getElementById('image-preview');
+            const originalPreview = document.getElementById('original-preview');
+            const processedPreview = document.getElementById('processed-preview');
+            const processButton = document.getElementById('process-button');
+            const downloadButton = document.getElementById('download-button');
+            
+            // Option selection
+            optionCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    selectedOption = this.dataset.option;
+                    
+                    // Update UI
+                    optionCards.forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                    
+                    // Show specific options
+                    processSpecificOptions.forEach(opt => {
+                        opt.classList.add('hidden');
+                    });
+                    document.getElementById(`${selectedOption}-options`).classList.remove('hidden');
+                    
+                    // Update button state
+                    updateButtonState();
+                });
+            });
+            
+            // File upload handling
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            fileInput.addEventListener('change', handleFileSelect);
+            
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', function() {
+                this.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('dragover');
+                handleFiles(e.dataTransfer.files);
+            });
+            
+            // Ingredient handling
+            document.getElementById('add-ingredient').addEventListener('click', addIngredient);
+            document.getElementById('ingredients').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addIngredient();
+                }
+            });
+            
+            // Range sliders
+            document.getElementById('opacity').addEventListener('input', function() {
+                document.getElementById('opacity-value').textContent = this.value;
+            });
+            
+            document.getElementById('pixel-size').addEventListener('input', function() {
+                document.getElementById('pixel-size-value').textContent = this.value;
+            });
+            
+            document.getElementById('palette-size').addEventListener('input', function() {
+                document.getElementById('palette-size-value').textContent = this.value;
+            });
+            
+            // Process button
+            processButton.addEventListener('click', processImage);
+            
+            // Download button
+            downloadButton.addEventListener('click', downloadImage);
+            
+            // Functions
+            function handleFileSelect(e) {
+                handleFiles(this.files);
+            }
+            
+            function handleFiles(files) {
+                // For now, just handle the first file for most options
+                // For collage, we'll handle multiple files
+                uploadedFiles = files;
+                
+                if (files.length > 0) {
+                    const file = files[0];
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        originalPreview.src = e.target.result;
+                        imagePreview.classList.remove('hidden');
+                    };
+                    
+                    reader.readAsDataURL(file);
+                    
+                    // Update button state
+                    updateButtonState();
+                }
+            }
+            
+            function addIngredient() {
+                const input = document.getElementById('ingredients');
+                const ingredient = input.value.trim();
+                
+                if (ingredient && !selectedIngredients.includes(ingredient)) {
+                    selectedIngredients.push(ingredient);
+                    updateIngredientList();
+                    input.value = '';
+                }
+                
+                // Update button state
+                updateButtonState();
+            }
+            
+            function updateIngredientList() {
+                const list = document.getElementById('ingredient-list');
+                list.innerHTML = '';
+                
+                selectedIngredients.forEach(ingredient => {
+                    const tag = document.createElement('div');
+                    tag.className = 'ingredient-tag';
+                    tag.innerHTML = `
+                        ${ingredient}
+                        <span class="remove" data-ingredient="${ingredient}">&times;</span>
+                    `;
+                    list.appendChild(tag);
+                });
+                
+                // Add remove event listeners
+                document.querySelectorAll('.ingredient-tag .remove').forEach(button => {
+                    button.addEventListener('click', function() {
+                        removeIngredient(this.dataset.ingredient);
+                    });
+                });
+            }
+            
+            function removeIngredient(ingredient) {
+                selectedIngredients = selectedIngredients.filter(ing => ing !== ingredient);
+                updateIngredientList();
+                
+                // Update button state
+                updateButtonState();
+            }
+            
+            function updateButtonState() {
+                // Process button is enabled if:
+                // 1. An option is selected
+                // 2. At least one file is uploaded
+                // 3. For highlight option, at least one ingredient is selected
+                let enabled = selectedOption && uploadedFiles.length > 0;
+                
+                if (selectedOption === 'highlight' && selectedIngredients.length === 0) {
+                    enabled = false;
+                }
+                
+                processButton.disabled = !enabled;
+            }
+            
+            function processImage() {
+                if (!selectedOption || uploadedFiles.length === 0) {
+                    return;
+                }
+                
+                const formData = new FormData();
+                
+                if (selectedOption === 'direct') {
+                    // Handle direct processing
+                    const filterType = document.getElementById('filter-type').value;
+                    formData.append('image', uploadedFiles[0]);
+                    
+                    if (filterType === 'pixel') {
+                        const pixelSize = document.getElementById('direct-pixel-size').value;
+                        formData.append('pixel_size', pixelSize);
+                        
+                        fetch(`/direct-process/${filterType}`, {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                processedPreview.src = `data:image/png;base64,${data.processed_image}`;
+                                imagePreview.classList.remove('hidden');
+                                downloadButton.disabled = false;
+                            } else {
+                                alert(`Error: ${data.error}`);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('An error occurred during processing');
+                        });
+                    } else if (filterType === 'highlight') {
+                        // Get ingredients from the direct-ingredient-list
+                        const directIngredientsList = document.getElementById('direct-ingredient-list');
+                        const ingredients = Array.from(directIngredientsList.children).map(tag => tag.textContent.trim().replace(' ×', ''));
+                        
+                        formData.append('ingredients', JSON.stringify(ingredients));
+                        
+                        fetch(`/direct-process/${filterType}`, {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                processedPreview.src = `data:image/png;base64,${data.processed_image}`;
+                                imagePreview.classList.remove('hidden');
+                                downloadButton.disabled = false;
+                            } else {
+                                alert(`Error: ${data.error}`);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('An error occurred during processing');
+                        });
+                    }
+                    
+                    return;
+                }
+                
+                // Handle original processing options
+                formData.append('operation', selectedOption);
+                
+                // Add file(s)
+                if (selectedOption === 'collage') {
+                    // Add all files for collage
+                    for (let i = 0; i < uploadedFiles.length; i++) {
+                        formData.append('images[]', uploadedFiles[i]);
+                    }
+                    formData.append('columns', document.getElementById('collage-columns').value);
+                    formData.append('highlight', document.getElementById('highlight-collage').checked);
+                } else {
+                    // Single file for other operations
+                    formData.append('image', uploadedFiles[0]);
+                    
+                    if (selectedOption === 'highlight') {
+                        formData.append('ingredients', JSON.stringify(selectedIngredients));
+                        formData.append('opacity', document.getElementById('opacity').value);
+                        formData.append('show_labels', document.getElementById('show-labels').checked);
+                    } else if (selectedOption === 'pixel-art') {
+                        formData.append('pixel_size', document.getElementById('pixel-size').value);
+                        formData.append('palette_size', document.getElementById('palette-size').value);
+                    }
+                }
+                
+                // Show loading state
+                processButton.disabled = true;
+                processButton.textContent = 'Processing...';
+                
+                // Call API
+                fetch('/process-image', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Display result
+                        processedPreview.src = 'data:image/png;base64,' + data.processed_image;
+                        downloadButton.disabled = false;
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while processing the image.');
+                })
+                .finally(() => {
+                    // Reset button state
+                    processButton.disabled = false;
+                    processButton.textContent = 'Process Image';
+                });
+            }
+            
+            function downloadImage() {
+                // Create a temporary link element
+                const a = document.createElement('a');
+                a.href = processedPreview.src;
+                a.download = `processed-${selectedOption}-${Date.now()}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+            
+            // Filter type change event
+            const filterTypeSelect = document.getElementById('filter-type');
+            if (filterTypeSelect) {
+                filterTypeSelect.addEventListener('change', function() {
+                    const filterType = this.value;
+                    
+                    // Toggle visibility of filter-specific options
+                    if (filterType === 'pixel') {
+                        document.getElementById('direct-pixel-options').classList.remove('hidden');
+                        document.getElementById('direct-highlight-options').classList.add('hidden');
+                    } else if (filterType === 'highlight') {
+                        document.getElementById('direct-pixel-options').classList.add('hidden');
+                        document.getElementById('direct-highlight-options').classList.remove('hidden');
+                    }
+                });
+            }
+            
+            // Direct ingredients handling
+            const directAddIngredientBtn = document.getElementById('direct-add-ingredient');
+            if (directAddIngredientBtn) {
+                directAddIngredientBtn.addEventListener('click', function() {
+                    const input = document.getElementById('direct-ingredients');
+                    const value = input.value.trim();
+                    
+                    if (value) {
+                        const ingredientList = document.getElementById('direct-ingredient-list');
+                        
+                        // Create ingredient tag
+                        const tag = document.createElement('div');
+                        tag.className = 'ingredient-tag';
+                        tag.textContent = value + ' ';
+                        
+                        // Add remove button
+                        const removeBtn = document.createElement('span');
+                        removeBtn.className = 'remove';
+                        removeBtn.textContent = '×';
+                        removeBtn.addEventListener('click', function() {
+                            ingredientList.removeChild(tag);
+                        });
+                        
+                        tag.appendChild(removeBtn);
+                        ingredientList.appendChild(tag);
+                        
+                        // Clear input
+                        input.value = '';
+                    }
+                });
+            }
+            
+            // Range input updates
+            const directPixelSizeInput = document.getElementById('direct-pixel-size');
+            const directPixelSizeValue = document.getElementById('direct-pixel-size-value');
+            
+            if (directPixelSizeInput && directPixelSizeValue) {
+                directPixelSizeInput.addEventListener('input', function() {
+                    directPixelSizeValue.textContent = this.value;
+                });
+            }
+        });
+    </script>
+</body>
+</html> 

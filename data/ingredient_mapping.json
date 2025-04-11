@@ -1,0 +1,187 @@
+{
+  "ingredients": {
+    "shrimp": [
+      "prawn",
+      "prawns"
+    ],
+    "fish": [
+      "cod",
+      "salmon",
+      "tuna",
+      "tilapia"
+    ],
+    "chicken": [
+      "poultry"
+    ],
+    "beef": [
+      "steak",
+      "cow meat"
+    ],
+    "pork": [
+      "pig meat",
+      "ham"
+    ],
+    "tofu": [
+      "bean curd",
+      "soy protein"
+    ],
+    "egg": [
+      "eggs",
+      "fried egg",
+      "poached egg",
+      "scrambled egg"
+    ],
+    "crab": [
+      "crab meat",
+      "crab sticks"
+    ],
+    "octopus": [
+      "squid",
+      "tentacle",
+      "tentacles"
+    ],
+    "frog": [
+      "frog legs"
+    ],
+    "rice": [
+      "white rice",
+      "brown rice",
+      "jasmine rice"
+    ],
+    "noodles": [
+      "pasta",
+      "spaghetti",
+      "ramen",
+      "udon"
+    ],
+    "potato": [
+      "potatoes",
+      "sweet potato"
+    ],
+    "mushroom": [
+      "mushrooms",
+      "shiitake",
+      "portobello"
+    ],
+    "carrot": [
+      "carrots"
+    ],
+    "onion": [
+      "onions",
+      "scallion",
+      "green onion"
+    ],
+    "eggplant": [
+      "aubergine"
+    ],
+    "pepper": [
+      "bell pepper",
+      "chili pepper"
+    ],
+    "corn": [
+      "maize",
+      "sweet corn"
+    ],
+    "beans": [
+      "bean",
+      "green beans",
+      "red beans"
+    ],
+    "seaweed": [
+      "nori",
+      "kelp",
+      "sea vegetable"
+    ],
+    "herbs": [
+      "cilantro",
+      "basil",
+      "parsley",
+      "mint",
+      "oregano"
+    ],
+    "cheese": [
+      "cheddar",
+      "mozzarella",
+      "parmesan"
+    ],
+    "seeds": [
+      "sesame",
+      "sesame seeds",
+      "sunflower seeds"
+    ],
+    "tomato sauce": [
+      "red sauce",
+      "marinara"
+    ],
+    "brown broth": [
+      "brown sauce",
+      "gravy",
+      "au jus"
+    ],
+    "green sauce": [
+      "pesto",
+      "chimichurri",
+      "green emulsion"
+    ],
+    "curry": [
+      "curry sauce",
+      "curry paste",
+      "curry powder"
+    ],
+    "soy sauce": [
+      "shoyu",
+      "tamari"
+    ],
+    "cheese sauce": [
+      "cheese cream",
+      "cheese gravy"
+    ],
+    "black ink": [
+      "squid ink",
+      "cuttlefish ink",
+      "black sauce"
+    ]
+  },
+  "cooking_techniques": [
+    "saut\u00e9ed",
+    "poached",
+    "boiled",
+    "raw",
+    "steamed",
+    "braised",
+    "simmered",
+    "grilled",
+    "stir-fried",
+    "fried",
+    "baked",
+    "roasted"
+  ],
+  "cuisines": [
+    "spanish",
+    "italian",
+    "vietnamese",
+    "american",
+    "thai",
+    "japanese",
+    "french",
+    "korean",
+    "indian",
+    "mexican",
+    "chinese"
+  ],
+  "dish_types": [
+    "taco",
+    "pasta",
+    "plate",
+    "stew",
+    "burger",
+    "burrito",
+    "pizza",
+    "stir fry",
+    "soup",
+    "sandwich",
+    "bowl",
+    "curry",
+    "salad"
+  ]
+}

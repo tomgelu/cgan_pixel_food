@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Food Image Retriever</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .search-container {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+        }
+        #ingredients {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        .result-card {
+            display: flex;
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        .result-image {
+            width: 128px;
+            height: 128px;
+            margin-right: 20px;
+            object-fit: contain;
+            background-color: #eee;
+            border-radius: 4px;
+        }
+        .result-details {
+            flex: 1;
+        }
+        .result-details h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .score {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .loading {
+            text-align: center;
+            margin: 20px 0;
+            display: none;
+        }
+        .error {
+            color: red;
+            text-align: center;
+            margin: 20px 0;
+            display: none;
+        }
+        .examples {
+            margin-top: 30px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+        .example-tag {
+            display: inline-block;
+            background-color: #e9f5e9;
+            padding: 8px 15px;
+            margin: 5px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .example-tag:hover {
+            background-color: #d0edd0;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            overflow: auto;
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 50px auto;
+            max-width: 800px;
+            width: 90%;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            z-index: 10;
+        }
+        
+        .modal-body {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        
+        .modal-image-container {
+            flex: 1 1 50%;
+            min-width: 300px;
+            padding: 20px;
+            background-color: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-image {
+            max-width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+        }
+        
+        .modal-info {
+            flex: 1 1 50%;
+            min-width: 300px;
+            padding: 20px;
+        }
+        
+        .modal-title {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #4CAF50;
+        }
+        
+        .ingredient-tag {
+            display: inline-block;
+            background-color: #e6f7ff;
+            color: #0078d4;
+            padding: 6px 12px;
+            margin: 3px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        
+        .feedback-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        
+        .rating {
+            display: flex;
+            margin-top: 10px;
+        }
+        
+        .star {
+            color: #ddd;
+            font-size: 24px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        
+        .star:hover, .star.active {
+            color: #f9ca24;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .action-btn {
+            padding: 8px 16px;
+            background-color: white;
+            color: #4CAF50;
+            border: 1px solid #4CAF50;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            flex: 1;
+        }
+        
+        .action-btn:hover {
+            background-color: #4CAF50;
+            color: white;
+        }
+        /* Add styles for the processor link */
+        .header-links {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .processor-link {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #ff7e67;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+        .processor-link:hover {
+            background-color: #e76e59;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Food Image Retriever</h1>
+        
+        <!-- Add a prominent link to the image processor -->
+        <div class="header-links">
+            <a href="/processor" class="processor-link">🎨 Open Image Processor</a>
+        </div>
+        
+        <p>Enter ingredients to find matching food images using CLIP-powered semantic search.</p>
+        
+        <div class="search-container">
+            <input type="text" id="ingredients" placeholder="e.g., mushroom and fish">
+            <button id="search-button">Search</button>
+        </div>
+        
+        <div class="loading" id="loading">Searching for dishes...</div>
+        <div class="error" id="error"></div>
+        
+        <div class="results" id="results"></div>
+        
+        <div class="examples">
+            <h3>Try these examples:</h3>
+            <div class="example-tag" onclick="setExample('mushroom and fish')">mushroom and fish</div>
+            <div class="example-tag" onclick="setExample('noodles with egg')">noodles with egg</div>
+            <div class="example-tag" onclick="setExample('rice and vegetables with sauce')">rice and vegetables with sauce</div>
+            <div class="example-tag" onclick="setExample('tentacle and shellfish')">tentacle and shellfish</div>
+            <div class="example-tag" onclick="setExample('potato with cheese sauce')">potato with cheese sauce</div>
+        </div>
+    </div>
+    
+    <!-- Image Details Modal -->
+    <div id="image-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" id="close-modal">&times;</span>
+            <div class="modal-body">
+                <div class="modal-image-container">
+                    <img id="modal-image" class="modal-image" src="" alt="Food image">
+                </div>
+                <div class="modal-info">
+                    <h2 id="modal-title" class="modal-title">Image Details</h2>
+                    
+                    <div>
+                        <h3>Matched Ingredients:</h3>
+                        <div id="modal-ingredients"></div>
+                    </div>
+                    
+                    <p><strong>Similarity Score:</strong> <span id="modal-score" class="score"></span></p>
+                    
+                    <div class="action-buttons">
+                        <button id="compare-button" class="action-btn">Compare</button>
+                        <button id="download-button" class="action-btn">Download</button>
+                    </div>
+                    
+                    <div class="feedback-section">
+                        <h3>How relevant is this result?</h3>
+                        <div class="rating">
+                            <span class="star" data-value="1">★</span>
+                            <span class="star" data-value="2">★</span>
+                            <span class="star" data-value="3">★</span>
+                            <span class="star" data-value="4">★</span>
+                            <span class="star" data-value="5">★</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('search-button').addEventListener('click', searchImages);
+        document.getElementById('ingredients').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchImages();
+            }
+        });
+
+        function setExample(text) {
+            document.getElementById('ingredients').value = text;
+            searchImages();
+        }
+
+        function searchImages() {
+            const ingredients = document.getElementById('ingredients').value.trim();
+            if (!ingredients) {
+                showError('Please enter ingredients to search for');
+                return;
+            }
+            
+            showLoading(true);
+            clearResults();
+            clearError();
+            
+            fetch('/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ingredients: ingredients
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                showLoading(false);
+                if (data.success) {
+                    displayResults(data.results);
+                } else {
+                    showError(data.error || 'An error occurred');
+                }
+            })
+            .catch(error => {
+                showLoading(false);
+                showError('Network error: ' + error.message);
+            });
+        }
+
+        function displayResults(results) {
+            const resultsContainer = document.getElementById('results');
+            
+            if (results.length === 0) {
+                resultsContainer.innerHTML = '<p>No results found. Try different ingredients.</p>';
+                return;
+            }
+            
+            results.forEach((result, index) => {
+                const resultCard = document.createElement('div');
+                resultCard.className = 'result-card';
+                resultCard.dataset.id = result.filename;
+                
+                resultCard.innerHTML = `
+                    <img src="data:image/png;base64,${result.image}" class="result-image" alt="Food image">
+                    <div class="result-details">
+                        <h3>Match #${index + 1}</h3>
+                        <p><strong>Filename:</strong> ${result.filename}</p>
+                        <p><strong>Similarity Score:</strong> <span class="score">${result.score}</span></p>
+                    </div>
+                `;
+                
+                // Add click handler to open modal
+                resultCard.addEventListener('click', function() {
+                    openImageDetails(result);
+                });
+                
+                resultsContainer.appendChild(resultCard);
+            });
+        }
+        
+        // Modal Functions
+        function openImageDetails(result) {
+            const modal = document.getElementById('image-modal');
+            const modalImage = document.getElementById('modal-image');
+            const modalTitle = document.getElementById('modal-title');
+            const modalScore = document.getElementById('modal-score');
+            const modalIngredients = document.getElementById('modal-ingredients');
+            
+            // Set data
+            modalImage.src = `data:image/png;base64,${result.image}`;
+            modalTitle.textContent = result.filename;
+            modalScore.textContent = result.score;
+            
+            // Clear previous ingredients
+            modalIngredients.innerHTML = '';
+            
+            // Add ingredient tags if available
+            if (result.matched_ingredients && result.matched_ingredients.length > 0) {
+                result.matched_ingredients.forEach(ingredient => {
+                    const tag = document.createElement('span');
+                    tag.className = 'ingredient-tag';
+                    tag.textContent = ingredient;
+                    modalIngredients.appendChild(tag);
+                });
+            } else {
+                modalIngredients.textContent = 'No specific ingredients matched';
+            }
+            
+            // Show the modal
+            modal.style.display = 'flex';
+        }
+        
+        // Close modal when clicking X
+        document.getElementById('close-modal').addEventListener('click', function() {
+            document.getElementById('image-modal').style.display = 'none';
+        });
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('image-modal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+        
+        // Compare buttons functionality will be added here
+        
+        // Download button
+        document.getElementById('download-button').addEventListener('click', function() {
+            const modalImage = document.getElementById('modal-image');
+            if (modalImage.src) {
+                const link = document.createElement('a');
+                link.href = modalImage.src;
+                link.download = 'food-image.png';
+                link.click();
+            }
+        });
+        
+        // Star rating
+        document.querySelectorAll('.star').forEach(star => {
+            star.addEventListener('click', function() {
+                const value = parseInt(this.dataset.value);
+                const modalTitle = document.getElementById('modal-title');
+                const imageId = modalTitle.textContent;
+                
+                // Visual feedback
+                document.querySelectorAll('.star').forEach(s => {
+                    if (parseInt(s.dataset.value) <= value) {
+                        s.classList.add('active');
+                    } else {
+                        s.classList.remove('active');
+                    }
+                });
+                
+                // Send feedback to server
+                fetch('/feedback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: document.getElementById('ingredients').value,
+                        image_id: imageId,
+                        rating: value
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('Feedback submitted successfully');
+                    } else {
+                        console.error('Error submitting feedback:', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Network error submitting feedback:', error);
+                });
+            });
+        });
+
+        function showLoading(isLoading) {
+            document.getElementById('loading').style.display = isLoading ? 'block' : 'none';
+        }
+
+        function showError(message) {
+            const errorElement = document.getElementById('error');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+
+        function clearError() {
+            document.getElementById('error').style.display = 'none';
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+    </script>
+    <!-- Debug script to fix modal issues -->
+    <script src="/static/js/debug.js"></script>
+</body>
+</html>

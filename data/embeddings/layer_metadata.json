@@ -1,0 +1,66 @@
+[
+    {
+        "id": "stone_plate_01.png",
+        "category": "base"
+    },
+    {
+        "id": "simple_wooden_bowl_01.png",
+        "category": "base"
+    },
+    {
+        "id": "frog_leg_01.png",
+        "category": "protein"
+    },
+    {
+        "id": "crab_claw_01.png",
+        "category": "protein"
+    },
+    {
+        "id": "cooked_meat_chunk_01.png",
+        "category": "protein"
+    },
+    {
+        "id": "shrimp_01.png",
+        "category": "protein"
+    },
+    {
+        "id": "fish_fillet_01.png",
+        "category": "protein"
+    },
+    {
+        "id": "tofu_cube_01.png",
+        "category": "protein"
+    },
+    {
+        "id": "onion_ring_01.png",
+        "category": "vegetable"
+    },
+    {
+        "id": "zucchini_piece_01.png",
+        "category": "vegetable"
+    },
+    {
+        "id": "chili_flake_pile_01.png",
+        "category": "topping"
+    },
+    {
+        "id": "parsley_sprig_01.png",
+        "category": "topping"
+    },
+    {
+        "id": "basil_leaf_01.png",
+        "category": "topping"
+    },
+    {
+        "id": "sesame_seeds_scatter_01.png",
+        "category": "topping"
+    },
+    {
+        "id": "glowing_sparkle_01.png",
+        "category": "fx"
+    },
+    {
+        "id": "steam_puff_01.png",
+        "category": "fx"
+    }
+]

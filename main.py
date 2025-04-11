@@ -7,10 +7,14 @@ from typing import Optional
 import dotenv
 import time
 
+from generation import get_adapter
+
 dotenv.load_dotenv()
 
-API_BASE = "https://api.retrodiffusion.ai/v1"
-API_KEY = os.getenv("API_KEY")
+# Initialize the adapter with environment variables
+# Can be set to "retrodiffusion" or "colab" in .env file with ADAPTER_TYPE
+adapter = get_adapter()
+
 OUTPUT_DIR = "dataset"
 CSV_INPUT = "combos/combo_metadata.csv"
 
@@ -42,42 +46,27 @@ def generate_prompt(row):
     return prompt
 
 
-# --- API Call ---
+# --- API Call using adapter ---
 def generate_image(prompt: str, negative_prompt: str = "", width: int = 128, height: int = 128,
-                   steps: int = 20, seed: Optional[int] = None, model: str = "RD_FLUX", max_retries: int = 3) -> dict:
-    for attempt in range(max_retries):
-        try:
-            url = f"{API_BASE}/inferences"
-            payload = {
-                "prompt": prompt,
-                "width": width,
-                "height": height,
-                "num_inference_steps": steps,
-                "model": model,
-                "num_images": 1,
-                "remove_bg": True,
-                "prompt_style": "game_asset"
-            }
-            if seed is not None:
-                payload["seed"] = seed
-
-            headers = { "X-RD-Token": API_KEY }
-
-            response = requests.post(url, json=payload, headers=headers)
-            if response.status_code != 200:
-                raise Exception(f"Generation failed: {response.status_code} – {response.text}")
+                   steps: int = 20, seed: Optional[int] = None, model: str = None, max_retries: int = 3) -> dict:
+    try:
+        # Use the adapter's generate_image method
+        result = adapter.generate_image(
+            prompt=prompt,
+            negative_prompt=negative_prompt,
+            width=width,
+            height=height,
+            steps=steps,
+            seed=seed, 
+            model=model,
+            max_retries=max_retries,
+            remove_bg=True,
+            prompt_style="game_asset" if model is None else None  # Only use prompt_style with Retrodiffusion
+        )
+        return result
             
-            result = response.json()
-            if not result.get("base64_images") or len(result["base64_images"]) == 0:
-                raise Exception("No images returned in response")
-                
-            return result
-            
-        except Exception as e:
-            if attempt == max_retries - 1:
-                raise e
-            print(f"⚠️ Attempt {attempt + 1} failed: {str(e)}. Retrying...")
-            time.sleep(2)  # Wait 2 seconds before retrying
+    except Exception as e:
+        raise e
 
 def save_base64_image(base64_data: str, filepath: str):
     if "base64," in base64_data:
